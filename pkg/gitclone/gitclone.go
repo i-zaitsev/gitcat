@@ -3,13 +3,13 @@ package gitclone
 import (
 	"os/exec"
 
-	"github.com/i-zaitsev/gitcat/pkg/giturl"
+	"github.com/i-zaitsev/gitcat/pkg/gitpath"
 )
 
 // Clone clones a git repository via SSH or HTTPS.
 // For SSH, it is assumed that the SSH key is properly configured.
 // For HTTPS, only public repositories are supported (no authentication).
-func Clone(repoUrl *giturl.GitUrl, localDir string) error {
+func Clone(repoUrl *gitpath.GitPath, localDir string) error {
 	cmd := exec.Command("git", "clone", repoUrl.Path, localDir)
 	if err := cmd.Run(); err != nil {
 		return err
