@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/i-zaitsev/gitcat/pkg/internal/utils"
+	"github.com/i-zaitsev/gitcat/pkg/log"
 )
 
 type concat struct {
@@ -29,9 +30,11 @@ func Cat(paths []string) []string {
 			defer wg.Done()
 			f, err := os.Open(p)
 			if err != nil {
+				log.Warn("failed to open file", "path", p, "error", err)
 				return
 			}
 			defer utils.SilentClose(f)
+			log.Debug("reading file", "path", p)
 			scanner := bufio.NewScanner(f)
 			for scanner.Scan() {
 				cc.mu.Lock()

@@ -9,6 +9,7 @@ import (
 
 	"github.com/i-zaitsev/gitcat/pkg/gitclone"
 	"github.com/i-zaitsev/gitcat/pkg/gitpath"
+	"github.com/i-zaitsev/gitcat/pkg/log"
 )
 
 type RepoContent struct {
@@ -57,6 +58,7 @@ func (l *List) LocalRepo(repoDir string) (*RepoContent, error) {
 }
 
 func (l *List) walkGitRepo(repoDir string) (*RepoContent, error) {
+	log.Debug("walking repository directory", "dir", repoDir)
 	content := RepoContent{
 		Root: repoDir,
 	}
@@ -78,5 +80,6 @@ func (l *List) walkGitRepo(repoDir string) (*RepoContent, error) {
 		return nil, err
 	}
 
+	log.Debug("directory walk completed", "files", len(content.Files))
 	return &content, nil
 }

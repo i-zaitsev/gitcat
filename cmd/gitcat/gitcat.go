@@ -74,8 +74,8 @@ func main() {
 	log.Info("successfully listed repo files", "count", len(repo.Files))
 
 	allFileExt := files.DiscoverExt(repo)
-
 	log.Info("found file extensions", "found", strings.Join(allFileExt, ", "))
+
 	log.Info("taking only .go files")
 	onlyGo := files.MatchExt(repo, ".go")
 

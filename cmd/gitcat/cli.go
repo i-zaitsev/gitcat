@@ -102,10 +102,9 @@ func (c *Cli) setLog() {
 
 	logger := slog.New(
 		slog.NewTextHandler(
-			os.Stderr,
+			log.NewColorWriter(os.Stderr),
 			&slog.HandlerOptions{
-				Level:       logLevel,
-				ReplaceAttr: log.ColorizeLevel(),
+				Level: logLevel,
 			},
 		),
 	).With("app", "gitcat")
