@@ -95,10 +95,9 @@ The JSON output includes:
 Example output structure:
 ```json
 {
-  "files": ["main.go", "README.md", ...],
-  ".go": ["package main\n...", ...],
-  ".md": ["# Project\n...", ...],
-  ...
+  "files": ["main.go", "README.md", "LICENSE"],
+  ".go": ["package main\n", "import \"fmt\"\n"],
+  ".md": ["# Project\n", "## Description\n"]
 }
 ```
 
