@@ -1,6 +1,9 @@
 package utils
 
-import "os"
+import (
+	"io"
+	"os"
+)
 
 func FileExists(filename string) bool {
 	info, err := os.Stat(filename)
@@ -13,4 +16,8 @@ func FileExists(filename string) bool {
 func DirExists(dirname string) bool {
 	info, err := os.Stat(dirname)
 	return err == nil && info.IsDir()
+}
+
+func SilentClose(c io.Closer) {
+	_ = c.Close()
 }

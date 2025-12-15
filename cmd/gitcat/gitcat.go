@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
+	"github.com/i-zaitsev/gitcat/pkg/files"
 	"github.com/i-zaitsev/gitcat/pkg/ls"
 )
 
@@ -47,8 +49,10 @@ func main() {
 		repo  *ls.RepoContent
 	)
 
+	list := ls.NewList().IgnoreDotFiles()
+
 	if cli.location.IsLocal() {
-		repo, lsErr = ls.LocalRepo(cli.location.Path)
+		repo, lsErr = list.LocalRepo(cli.location.Path)
 	} else {
 		cloneDir := cli.localDir
 		if cli.tmpClone {
@@ -60,7 +64,7 @@ func main() {
 			defer os.RemoveAll(tmpDir)
 			cloneDir = tmpDir
 		}
-		repo, lsErr = ls.RemoteRepo(cli.location, cloneDir)
+		repo, lsErr = list.RemoteRepo(cli.location, cloneDir)
 	}
 
 	if lsErr != nil {
@@ -68,9 +72,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	lg.Info("successfully listed repo files", "count", len(repo.Content))
+	lg.Info("successfully listed repo files", "count", len(repo.Files))
 
-	for _, file := range repo.Content {
-		fmt.Println(file)
+	allFileExt := files.DiscoverExt(repo)
+
+	lg.Info("found file extensions", "found", strings.Join(allFileExt, ", "))
+	lg.Info("taking only .go files")
+	onlyGo := files.MatchExt(repo, ".go")
+
+	for _, line := range files.Cat(onlyGo.Files) {
+		fmt.Printf("%s\n", line)
 	}
 }

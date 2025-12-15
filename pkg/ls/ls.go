@@ -12,11 +12,24 @@ import (
 )
 
 type RepoContent struct {
-	Root    string
-	Content []string
+	Root  string
+	Files []string
 }
 
-func RemoteRepo(repoUrl *gitpath.GitPath, cloneDir string) (*RepoContent, error) {
+type List struct {
+	dotIgnore bool
+}
+
+func NewList() *List {
+	return &List{}
+}
+
+func (l *List) IgnoreDotFiles() *List {
+	l.dotIgnore = true
+	return l
+}
+
+func (l *List) RemoteRepo(repoUrl *gitpath.GitPath, cloneDir string) (*RepoContent, error) {
 	if err := gitclone.Clone(repoUrl, cloneDir); err != nil {
 		return nil, err
 	}
@@ -25,14 +38,14 @@ func RemoteRepo(repoUrl *gitpath.GitPath, cloneDir string) (*RepoContent, error)
 		return nil, fmt.Errorf("failed to get status: %w", err)
 	}
 
-	if content, err := walkGitRepo(cloneDir); err != nil {
+	if content, err := l.walkGitRepo(cloneDir); err != nil {
 		return nil, err
 	} else {
 		return content, nil
 	}
 }
 
-func LocalRepo(repoDir string) (*RepoContent, error) {
+func (l *List) LocalRepo(repoDir string) (*RepoContent, error) {
 	state, err := os.Stat(repoDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to stat directory: %w", err)
@@ -40,10 +53,10 @@ func LocalRepo(repoDir string) (*RepoContent, error) {
 	if !state.IsDir() {
 		return nil, fmt.Errorf("not a directory: %s", repoDir)
 	}
-	return walkGitRepo(repoDir)
+	return l.walkGitRepo(repoDir)
 }
 
-func walkGitRepo(repoDir string) (*RepoContent, error) {
+func (l *List) walkGitRepo(repoDir string) (*RepoContent, error) {
 	content := RepoContent{
 		Root: repoDir,
 	}
@@ -52,17 +65,18 @@ func walkGitRepo(repoDir string) (*RepoContent, error) {
 		if err != nil {
 			return err
 		}
-		if d.IsDir() || strings.Contains(path, ".git") {
+		if l.dotIgnore && strings.HasPrefix(path, ".") {
 			return nil
 		}
-
-		relPath := strings.TrimPrefix(path, repoDir)
-		relPath = strings.TrimPrefix(relPath, "/")
-
-		content.Content = append(content.Content, relPath)
+		if d.IsDir() {
+			return nil
+		}
+		relPath := strings.TrimPrefix(path, repoDir+"/")
+		content.Files = append(content.Files, relPath)
 		return nil
 	}); err != nil {
 		return nil, err
 	}
+
 	return &content, nil
 }
