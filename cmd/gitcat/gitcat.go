@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/i-zaitsev/gitcat/pkg/files"
+	"github.com/i-zaitsev/gitcat/pkg/log"
 	"github.com/i-zaitsev/gitcat/pkg/ls"
 )
 
@@ -17,28 +18,26 @@ func main() {
 		os.Exit(1)
 	}
 
-	lg := cli.lg
-
 	if cli.dryRun {
-		lg.Info("dry run mode enabled - no actions will be executed")
+		log.Info("dry run mode enabled - no actions will be executed")
 		if cli.location.IsLocal() {
-			lg.Info("would list local repository", "path", cli.location.Path)
+			log.Info("would list local repository", "path", cli.location.Path)
 		} else {
-			lg.Info("would clone repository",
+			log.Info("would clone repository",
 				"url", cli.location.Path,
 				"protocol", cli.location.Kind,
 				"dir", cli.localDir)
 			if cli.tmpClone {
-				lg.Warn("cloning to a tmp directory - deleted after execution")
+				log.Warn("cloning to a tmp directory - deleted after execution")
 			}
 		}
 		return
 	}
 
 	if cli.location.IsLocal() {
-		lg.Info("listing local repository", "path", cli.location.Path)
+		log.Info("listing local repository", "path", cli.location.Path)
 	} else {
-		lg.Info("cloning repository",
+		log.Info("cloning repository",
 			"url", cli.location.Path,
 			"protocol", cli.location.Kind,
 			"dir", cli.localDir)
@@ -58,7 +57,7 @@ func main() {
 		if cli.tmpClone {
 			tmpDir, err := os.MkdirTemp("", "gitcat-*")
 			if err != nil {
-				lg.Error("failed to create tmp directory", "error", err)
+				log.Error("failed to create tmp directory", "error", err)
 				os.Exit(1)
 			}
 			defer os.RemoveAll(tmpDir)
@@ -68,16 +67,16 @@ func main() {
 	}
 
 	if lsErr != nil {
-		lg.Error("failed to list repo files", "error", lsErr)
+		log.Error("failed to list repo files", "error", lsErr)
 		os.Exit(1)
 	}
 
-	lg.Info("successfully listed repo files", "count", len(repo.Files))
+	log.Info("successfully listed repo files", "count", len(repo.Files))
 
 	allFileExt := files.DiscoverExt(repo)
 
-	lg.Info("found file extensions", "found", strings.Join(allFileExt, ", "))
-	lg.Info("taking only .go files")
+	log.Info("found file extensions", "found", strings.Join(allFileExt, ", "))
+	log.Info("taking only .go files")
 	onlyGo := files.MatchExt(repo, ".go")
 
 	for _, line := range files.Cat(onlyGo.Files) {

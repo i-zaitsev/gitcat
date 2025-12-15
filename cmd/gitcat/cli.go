@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/i-zaitsev/gitcat/pkg/gitpath"
+	"github.com/i-zaitsev/gitcat/pkg/log"
 )
 
 type Cli struct {
@@ -16,7 +17,6 @@ type Cli struct {
 	dryRun   bool
 	debug    bool
 	tmpClone bool
-	lg       *slog.Logger
 }
 
 func NewCLI() *Cli {
@@ -100,12 +100,15 @@ func (c *Cli) setLog() {
 		logLevel = slog.LevelInfo
 	}
 
-	c.lg = slog.New(
+	logger := slog.New(
 		slog.NewTextHandler(
 			os.Stderr,
 			&slog.HandlerOptions{
-				Level: logLevel,
+				Level:       logLevel,
+				ReplaceAttr: log.ColorizeLevel(),
 			},
 		),
 	).With("app", "gitcat")
+
+	log.SetLogger(logger)
 }
