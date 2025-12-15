@@ -3,11 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 
-	"github.com/i-zaitsev/gitcat/pkg/files"
 	"github.com/i-zaitsev/gitcat/pkg/log"
 	"github.com/i-zaitsev/gitcat/pkg/ls"
+	"github.com/i-zaitsev/gitcat/pkg/output"
 )
 
 func main() {
@@ -73,13 +72,12 @@ func main() {
 
 	log.Info("successfully listed repo files", "count", len(repo.Files))
 
-	allFileExt := files.DiscoverExt(repo)
-	log.Info("found file extensions", "found", strings.Join(allFileExt, ", "))
-
-	log.Info("taking only .go files")
-	onlyGo := files.MatchExt(repo, ".go")
-
-	for _, line := range files.Cat(onlyGo.Files) {
-		fmt.Printf("%s\n", line)
+	switch cli.outFmt {
+	case output.JSON:
+		log.Info("writing output to JSON")
+		fmt.Println(output.ToJSON(repo))
+	case output.Text:
+		log.Info("writing output to text")
+		fmt.Println(output.ToText(repo))
 	}
 }
