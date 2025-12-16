@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/i-zaitsev/gitcat/pkg/internal/utils"
@@ -18,7 +17,7 @@ type concat struct {
 }
 
 // Cat reads files and concatenates their contents.
-func Cat(paths []string) []string {
+func Cat(paths ...string) string {
 	cc := concat{
 		paths: paths,
 		lines: make(map[string][]string, len(paths)),
@@ -50,5 +49,5 @@ func Cat(paths []string) []string {
 			buf.WriteString(line)
 		}
 	}
-	return strings.Split(buf.String(), "\n")
+	return buf.String()
 }
