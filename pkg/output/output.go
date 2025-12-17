@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	Text = "text"
-	JSON = "json"
+	FormatText  = "text"
+	FormatJSONL = "jsonl"
 )
 
 func ToText(repo *ls.RepoContent) string {
@@ -24,37 +24,32 @@ func ToText(repo *ls.RepoContent) string {
 	return buf.String()
 }
 
-func ToJSON(repo *ls.RepoContent) string {
-	ctx := makeContext(repo)
-	content, err := json.Marshal(ctx)
-	if err != nil {
-		log.Error("failed to marshal output", "error", err)
-		return ""
-	}
-	return string(content)
-}
+func ToJSONL(repo *ls.RepoContent) (string, error) {
+	var buf strings.Builder
 
-// context represents a code repository in a structured form
-// Each path is mapped to its content.
-// Additionally, metadata such as listed file names and extensions are included.
-type context struct {
-	Files         []string          `json:"files"`
-	Exts          []string          `json:"exts"`
-	PathToContent map[string]string `json:"pathToContent"`
-}
-
-func makeContext(repo *ls.RepoContent) context {
-	allFileExt := files.DiscoverExt(repo)
-	ctx := context{
-		Files:         repo.Files,
-		Exts:          allFileExt,
-		PathToContent: make(map[string]string, len(repo.Files)),
-	}
-	for _, ext := range allFileExt {
+	for _, ext := range files.DiscoverExt(repo) {
 		extRepo := files.MatchExt(repo, ext)
 		for _, filename := range extRepo.Files {
-			ctx.PathToContent[filename] = files.Cat(filename)
+			entry := outputEntry{
+				File:    filename,
+				Ext:     ext,
+				Content: files.Cat(filename),
+			}
+			content, err := json.Marshal(entry)
+			if err != nil {
+				log.Error("failed to marshal output entry", "entry", entry, "error", err)
+				continue
+			}
+			buf.Write(content)
+			buf.WriteRune('\n')
 		}
 	}
-	return ctx
+
+	return buf.String(), nil
+}
+
+type outputEntry struct {
+	File    string `json:"file"`
+	Ext     string `json:"ext"`
+	Content string `json:"content"`
 }

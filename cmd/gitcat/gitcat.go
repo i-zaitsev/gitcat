@@ -73,10 +73,10 @@ func main() {
 	log.Info("successfully listed repo files", "count", len(repo.Files))
 
 	switch cli.outFmt {
-	case output.JSON:
-		log.Info("writing output to JSON")
-		fmt.Println(output.ToJSON(repo))
-	case output.Text:
+	case output.FormatJSONL:
+		log.Info("writing output to FormatGrouped")
+		fmt.Println(output.ToJSONL(repo))
+	case output.FormatText:
 		log.Info("writing output to text")
 		fmt.Println(output.ToText(repo))
 	}
