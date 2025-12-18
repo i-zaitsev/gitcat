@@ -15,14 +15,17 @@ import (
 type Cli struct {
 	location *gitpath.GitPath
 	localDir string
+	outFile  string
 	dryRun   bool
 	debug    bool
 	tmpClone bool
-	outFmt   string
+	outFmt   output.Format
 }
 
 func NewCLI() *Cli {
-	return &Cli{}
+	return &Cli{
+		outFmt: output.FormatJSONL,
+	}
 }
 
 // Parse takes args without the program's name and parses the flags.
@@ -34,15 +37,12 @@ func (c *Cli) Parse(args []string) error {
 	fs.BoolVar(&c.dryRun, "dryrun", false, "dry run mode - log actions without executing them")
 	fs.BoolVar(&c.debug, "debug", false, "enable debug logging")
 	fs.BoolVar(&c.tmpClone, "tmp", false, "clone into a temporary directory which is deleted after execution")
-	fs.StringVar(&c.outFmt, "fmt", output.FormatJSONL, "output format (jsonl or text)")
+	fs.Var(&c.outFmt, "fmt", "output format (text, jsonl, or md)")
+	fs.StringVar(&c.outFile, "out", "", "output file (without extension, uses -fmt for extension)")
 	fs.StringVar(&c.localDir, "dir", "", "local directory to clone into (defaults to repo name)")
 
 	if err := fs.Parse(args); err != nil {
 		return err
-	}
-
-	if c.outFmt != output.FormatJSONL && c.outFmt != output.FormatText {
-		return fmt.Errorf("invalid output format: %s", c.outFmt)
 	}
 
 	c.setLog()

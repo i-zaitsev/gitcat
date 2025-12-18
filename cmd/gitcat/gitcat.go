@@ -9,6 +9,23 @@ import (
 	"github.com/i-zaitsev/gitcat/pkg/output"
 )
 
+// writeOutput writes content to the specified file or stdout.
+// If outFile is empty, writes to stdout. Otherwise, appends the format extension.
+func writeOutput(content, outFile string, format output.Format) error {
+	if outFile == "" {
+		fmt.Println(content)
+		return nil
+	}
+
+	filename := outFile + "." + string(format)
+	if err := os.WriteFile(filename, []byte(content), 0644); err != nil {
+		return fmt.Errorf("failed to write output file: %w", err)
+	}
+
+	log.Info("output written to file", "file", filename)
+	return nil
+}
+
 func main() {
 	cli := NewCLI()
 
@@ -72,12 +89,26 @@ func main() {
 
 	log.Info("successfully listed repo files", "count", len(repo.Files))
 
+	var content string
 	switch cli.outFmt {
 	case output.FormatJSONL:
 		log.Info("writing output to FormatGrouped")
-		fmt.Println(output.ToJSONL(repo))
+		jsonl, err := output.ToJSONL(repo)
+		if err != nil {
+			log.Error("failed to generate JSONL output", "error", err)
+			os.Exit(1)
+		}
+		content = jsonl
 	case output.FormatText:
 		log.Info("writing output to text")
-		fmt.Println(output.ToText(repo))
+		content = output.ToText(repo)
+	case output.FormatMarkdown:
+		log.Info("writing output to markdown")
+		content = output.ToMarkdown(repo)
+	}
+
+	if err := writeOutput(content, cli.outFile, cli.outFmt); err != nil {
+		log.Error("failed to write output", "error", err)
+		os.Exit(1)
 	}
 }
