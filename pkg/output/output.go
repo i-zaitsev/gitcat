@@ -71,8 +71,8 @@ func ToJSONL(repo *ls.RepoContent, headLines int) (string, error) {
 	return buf.String(), nil
 }
 
-// ToMarkdown formats repository content as markdown with code blocks.
-// Uses the same file iteration as JSONL but outputs markdown format.
+// ToMarkdown formats repository content as Markdown with code blocks.
+// Uses the same file iteration as JSONL but outputs a Markdown format.
 func ToMarkdown(repo *ls.RepoContent, headLines int) string {
 	var buf strings.Builder
 
