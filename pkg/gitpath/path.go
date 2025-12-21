@@ -48,3 +48,27 @@ func (es *Extensions) Set(value string) error {
 	}
 	return nil
 }
+
+// Paths represent a list of directory paths for filtering.
+type Paths []string
+
+func (p *Paths) String() string {
+	if p == nil {
+		return ""
+	}
+	return strings.Join(*p, ",")
+}
+
+func (p *Paths) Set(value string) error {
+	if value == "" {
+		*p = []string{}
+		return nil
+	}
+	parts := strings.Split(value, ",")
+	*p = make([]string, len(parts))
+	for i, path := range parts {
+		trimmed := strings.TrimSpace(path)
+		(*p)[i] = strings.TrimSuffix(trimmed, "/")
+	}
+	return nil
+}

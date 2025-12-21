@@ -13,19 +13,24 @@ import (
 )
 
 type Cli struct {
-	location *gitpath.GitPath
-	localDir string
-	outFile  string
-	dryRun   bool
-	debug    bool
-	tmpClone bool
-	outFmt   output.Format
-	keepExt  gitpath.Extensions
+	location     *gitpath.GitPath
+	localDir     string
+	outFile      string
+	dryRun       bool
+	debug        bool
+	tmpClone     bool
+	outFmt       output.Format
+	keepExt      gitpath.Extensions
+	includePaths gitpath.Paths
+	excludePaths gitpath.Paths
+	minSize      gitpath.Size
+	maxSize      gitpath.Size
 }
 
 func NewCLI() *Cli {
 	return &Cli{
-		outFmt: output.FormatJSONL,
+		outFmt:  output.FormatJSONL,
+		maxSize: -1,
 	}
 }
 
@@ -42,6 +47,10 @@ func (c *Cli) Parse(args []string) error {
 	fs.StringVar(&c.localDir, "dir", "", "local directory to clone into (defaults to repo name)")
 	fs.Var(&c.outFmt, "fmt", "output format (text, jsonl, or md)")
 	fs.Var(&c.keepExt, "keep", "comma-separated list of file extensions to keep (default: none)")
+	fs.Var(&c.includePaths, "path", "comma-separated paths to include")
+	fs.Var(&c.excludePaths, "exclude", "comma-separated paths to exclude")
+	fs.Var(&c.minSize, "minsize", "minimum file size in KB (e.g., 100)")
+	fs.Var(&c.maxSize, "maxsize", "maximum file size in KB (e.g., 500)")
 
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -86,6 +95,8 @@ func (c *Cli) usage(fs *flag.FlagSet) func() {
 		b.WriteString("  gitcat git@github.com:user/repo.git\n")
 		b.WriteString("  gitcat https://github.com/user/repo.git\n")
 		b.WriteString("  gitcat -dryrun -dir ./myrepo git@github.com:user/repo.git\n")
+		b.WriteString("  gitcat -path pkg/files,cmd -exclude testdata https://github.com/user/repo.git\n")
+		b.WriteString("  gitcat -maxsize 500 -keep .go https://github.com/user/repo.git\n")
 		fs.SetOutput(old)
 		_, _ = fmt.Fprintln(fs.Output(), b.String())
 	}

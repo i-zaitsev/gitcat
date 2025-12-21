@@ -65,7 +65,10 @@ func main() {
 		repo  *ls.RepoContent
 	)
 
-	list := ls.NewList().IgnoreDotFiles()
+	list := ls.NewList().
+		IgnoreDotFiles().
+		WithPaths(cli.includePaths...).
+		ExcludePaths(cli.excludePaths...)
 
 	if cli.location.IsLocal() {
 		repo, lsErr = list.LocalRepo(cli.location.Path)
@@ -94,6 +97,13 @@ func main() {
 		log.Warn("keeping only files with extensions", "extensions", cli.keepExt)
 		repo = files.MatchExt(repo, cli.keepExt...)
 	}
+
+	if cli.minSize > 0 || cli.maxSize >= 0 {
+		log.Info("applying size filters", "minsize", cli.minSize.InBytes(), "maxsize", cli.maxSize.InBytes())
+		repo = files.FilterBySize(repo, cli.minSize.InBytes(), cli.maxSize.InBytes())
+	}
+
+	log.Info("files after all filters", "count", len(repo.Files))
 
 	var content string
 	switch cli.outFmt {
