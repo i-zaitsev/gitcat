@@ -20,6 +20,7 @@ type Cli struct {
 	debug    bool
 	tmpClone bool
 	outFmt   output.Format
+	keepExt  gitpath.Extensions
 }
 
 func NewCLI() *Cli {
@@ -37,9 +38,10 @@ func (c *Cli) Parse(args []string) error {
 	fs.BoolVar(&c.dryRun, "dryrun", false, "dry run mode - log actions without executing them")
 	fs.BoolVar(&c.debug, "debug", false, "enable debug logging")
 	fs.BoolVar(&c.tmpClone, "tmp", false, "clone into a temporary directory which is deleted after execution")
-	fs.Var(&c.outFmt, "fmt", "output format (text, jsonl, or md)")
 	fs.StringVar(&c.outFile, "out", "", "output file (without extension, uses -fmt for extension)")
 	fs.StringVar(&c.localDir, "dir", "", "local directory to clone into (defaults to repo name)")
+	fs.Var(&c.outFmt, "fmt", "output format (text, jsonl, or md)")
+	fs.Var(&c.keepExt, "keep", "comma-separated list of file extensions to keep (default: none)")
 
 	if err := fs.Parse(args); err != nil {
 		return err

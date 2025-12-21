@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/i-zaitsev/gitcat/pkg/files"
 	"github.com/i-zaitsev/gitcat/pkg/log"
 	"github.com/i-zaitsev/gitcat/pkg/ls"
 	"github.com/i-zaitsev/gitcat/pkg/output"
@@ -88,6 +89,11 @@ func main() {
 	}
 
 	log.Info("successfully listed repo files", "count", len(repo.Files))
+
+	if len(cli.keepExt) > 0 {
+		log.Warn("keeping only files with extensions", "extensions", cli.keepExt)
+		repo = files.MatchExt(repo, cli.keepExt...)
+	}
 
 	var content string
 	switch cli.outFmt {

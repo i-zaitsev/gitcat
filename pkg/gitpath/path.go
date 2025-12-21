@@ -2,6 +2,7 @@ package gitpath
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/i-zaitsev/gitcat/pkg/internal/utils"
 )
@@ -27,4 +28,23 @@ func FromDir(localDir string) (*GitPath, error) {
 
 func (g *GitPath) IsLocal() bool {
 	return g.Kind == Local
+}
+
+// Extensions represent a list of file extensions to include in the output.
+type Extensions []string
+
+func (es *Extensions) String() string {
+	if es == nil {
+		return ""
+	}
+	return strings.Join(*es, ",")
+}
+
+func (es *Extensions) Set(value string) error {
+	ret := strings.Split(value, ",")
+	*es = make([]string, len(ret))
+	for i, v := range ret {
+		(*es)[i] = "." + strings.TrimSpace(strings.TrimPrefix(v, "."))
+	}
+	return nil
 }
