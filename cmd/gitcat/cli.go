@@ -25,6 +25,7 @@ type Cli struct {
 	excludePaths gitpath.Paths
 	minSize      gitpath.Size
 	maxSize      gitpath.Size
+	headLines    int
 }
 
 func NewCLI() *Cli {
@@ -51,6 +52,7 @@ func (c *Cli) Parse(args []string) error {
 	fs.Var(&c.excludePaths, "exclude", "comma-separated paths to exclude")
 	fs.Var(&c.minSize, "minsize", "minimum file size in KB (e.g., 100)")
 	fs.Var(&c.maxSize, "maxsize", "maximum file size in KB (e.g., 500)")
+	fs.IntVar(&c.headLines, "head", 0, "number of lines to read from each file (0 = all)")
 
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -97,6 +99,7 @@ func (c *Cli) usage(fs *flag.FlagSet) func() {
 		b.WriteString("  gitcat -dryrun -dir ./myrepo git@github.com:user/repo.git\n")
 		b.WriteString("  gitcat -path pkg/files,cmd -exclude testdata https://github.com/user/repo.git\n")
 		b.WriteString("  gitcat -maxsize 500 -keep .go https://github.com/user/repo.git\n")
+		b.WriteString("  gitcat -head 50 https://github.com/user/repo.git\n")
 		fs.SetOutput(old)
 		_, _ = fmt.Fprintln(fs.Output(), b.String())
 	}

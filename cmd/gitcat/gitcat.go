@@ -109,7 +109,7 @@ func main() {
 	switch cli.outFmt {
 	case output.FormatJSONL:
 		log.Info("writing output to FormatGrouped")
-		jsonl, err := output.ToJSONL(repo)
+		jsonl, err := output.ToJSONL(repo, cli.headLines)
 		if err != nil {
 			log.Error("failed to generate JSONL output", "error", err)
 			os.Exit(1)
@@ -117,10 +117,10 @@ func main() {
 		content = jsonl
 	case output.FormatText:
 		log.Info("writing output to text")
-		content = output.ToText(repo)
+		content = output.ToText(repo, cli.headLines)
 	case output.FormatMarkdown:
 		log.Info("writing output to markdown")
-		content = output.ToMarkdown(repo)
+		content = output.ToMarkdown(repo, cli.headLines)
 	}
 
 	if err := writeOutput(content, cli.outFile, cli.outFmt); err != nil {

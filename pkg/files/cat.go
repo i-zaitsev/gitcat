@@ -17,7 +17,8 @@ type concat struct {
 }
 
 // Cat reads files and concatenates their contents.
-func Cat(paths ...string) string {
+// If maxLines > 0, only the first maxLines of each file are read.
+func Cat(maxLines int, paths ...string) string {
 	cc := concat{
 		paths: paths,
 		lines: make(map[string][]string, len(paths)),
@@ -35,10 +36,15 @@ func Cat(paths ...string) string {
 			defer utils.SilentClose(f)
 			log.Debug("reading file", "path", p)
 			scanner := bufio.NewScanner(f)
+			lineCount := 0
 			for scanner.Scan() {
+				if maxLines > 0 && lineCount >= maxLines {
+					break
+				}
 				cc.mu.Lock()
 				cc.lines[p] = append(cc.lines[p], scanner.Text()+"\n")
 				cc.mu.Unlock()
+				lineCount++
 			}
 		}(path)
 	}

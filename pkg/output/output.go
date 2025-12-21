@@ -38,16 +38,16 @@ func (f *Format) Set(value string) error {
 	}
 }
 
-func ToText(repo *ls.RepoContent) string {
+func ToText(repo *ls.RepoContent, headLines int) string {
 	var buf strings.Builder
 	for _, ext := range files.DiscoverExt(repo) {
 		extRepo := files.MatchExt(repo, ext)
-		buf.WriteString(files.Cat(extRepo.Files...) + "\n")
+		buf.WriteString(files.Cat(headLines, extRepo.Files...) + "\n")
 	}
 	return buf.String()
 }
 
-func ToJSONL(repo *ls.RepoContent) (string, error) {
+func ToJSONL(repo *ls.RepoContent, headLines int) (string, error) {
 	var buf strings.Builder
 
 	for _, ext := range files.DiscoverExt(repo) {
@@ -56,7 +56,7 @@ func ToJSONL(repo *ls.RepoContent) (string, error) {
 			entry := outputEntry{
 				File:    filename,
 				Ext:     ext,
-				Content: files.Cat(filename),
+				Content: files.Cat(headLines, filename),
 			}
 			content, err := json.Marshal(entry)
 			if err != nil {
@@ -73,13 +73,13 @@ func ToJSONL(repo *ls.RepoContent) (string, error) {
 
 // ToMarkdown formats repository content as markdown with code blocks.
 // Uses the same file iteration as JSONL but outputs markdown format.
-func ToMarkdown(repo *ls.RepoContent) string {
+func ToMarkdown(repo *ls.RepoContent, headLines int) string {
 	var buf strings.Builder
 
 	for _, ext := range files.DiscoverExt(repo) {
 		extRepo := files.MatchExt(repo, ext)
 		for _, filename := range extRepo.Files {
-			content := files.Cat(filename)
+			content := files.Cat(headLines, filename)
 
 			buf.WriteString("## ")
 			buf.WriteString(filename)
