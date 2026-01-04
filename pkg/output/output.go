@@ -42,7 +42,7 @@ func ToText(repo *ls.RepoContent, headLines int) string {
 	var buf strings.Builder
 	for _, ext := range files.DiscoverExt(repo) {
 		extRepo := files.MatchExt(repo, ext)
-		buf.WriteString(files.Cat(headLines, extRepo.Files...) + "\n")
+		buf.WriteString(files.Cat(headLines, extRepo.AbsFiles()...) + "\n")
 	}
 	return buf.String()
 }
@@ -52,7 +52,7 @@ func ToJSONL(repo *ls.RepoContent, headLines int) (string, error) {
 
 	for _, ext := range files.DiscoverExt(repo) {
 		extRepo := files.MatchExt(repo, ext)
-		for _, filename := range extRepo.Files {
+		for _, filename := range extRepo.AbsFiles() {
 			entry := outputEntry{
 				File:    filename,
 				Ext:     ext,
@@ -78,7 +78,7 @@ func ToMarkdown(repo *ls.RepoContent, headLines int) string {
 
 	for _, ext := range files.DiscoverExt(repo) {
 		extRepo := files.MatchExt(repo, ext)
-		for _, filename := range extRepo.Files {
+		for _, filename := range extRepo.AbsFiles() {
 			content := files.Cat(headLines, filename)
 
 			buf.WriteString("## ")

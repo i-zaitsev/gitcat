@@ -17,6 +17,14 @@ type RepoContent struct {
 	Files []string
 }
 
+func (r *RepoContent) AbsFiles() []string {
+	absFiles := make([]string, len(r.Files))
+	for i, f := range r.Files {
+		absFiles[i] = filepath.Join(r.Root, f)
+	}
+	return absFiles
+}
+
 type List struct {
 	dotIgnore    bool
 	includePaths []string

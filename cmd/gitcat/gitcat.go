@@ -51,15 +51,6 @@ func main() {
 		return
 	}
 
-	if cli.location.IsLocal() {
-		log.Info("listing local repository", "path", cli.location.Path)
-	} else {
-		log.Info("cloning repository",
-			"url", cli.location.Path,
-			"protocol", cli.location.Kind,
-			"dir", cli.localDir)
-	}
-
 	var (
 		lsErr error
 		repo  *ls.RepoContent
@@ -71,8 +62,13 @@ func main() {
 		ExcludePaths(cli.excludePaths...)
 
 	if cli.location.IsLocal() {
+		log.Info("listing local repository", "path", cli.location.Path)
 		repo, lsErr = list.LocalRepo(cli.location.Path)
 	} else {
+		log.Info("cloning repository",
+			"url", cli.location.Path,
+			"protocol", cli.location.Kind,
+			"dir", cli.localDir)
 		cloneDir := cli.localDir
 		if cli.tmpClone {
 			tmpDir, err := os.MkdirTemp("", "gitcat-*")
