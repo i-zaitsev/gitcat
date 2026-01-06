@@ -20,7 +20,11 @@ type RepoContent struct {
 func (r *RepoContent) AbsFiles() []string {
 	absFiles := make([]string, len(r.Files))
 	for i, f := range r.Files {
-		absFiles[i] = filepath.Join(r.Root, f)
+		if filepath.IsAbs(f) {
+			absFiles[i] = f
+		} else {
+			absFiles[i] = filepath.Join(r.Root, f)
+		}
 	}
 	return absFiles
 }
