@@ -27,3 +27,6 @@ go.work.sum
 # Project specific
 .idea/
 .vscode/
+
+# macOS
+.DS_Store
