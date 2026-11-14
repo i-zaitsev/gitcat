@@ -1,0 +1,44 @@
+---
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - gosimple
+    - ineffassign
+    - gocritic
+    - revive
+    - depguard
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+  depguard:
+    rules:
+      pkg-independent-of-cli:
+        list-mode: lax
+        files:
+          - "**/pkg/**"
+        deny:
+          - pkg: github.com/i-zaitsev/gitcat/cmd
+            desc: library packages must not depend on the command-line tool
+      logic-io-free:
+        list-mode: lax
+        files:
+          - "**/pkg/repo/**"
+          - "**/pkg/filter/**"
+          - "**/pkg/files/**"
+          - "**/pkg/output/**"
+          - "!$test"
+        deny:
+          - pkg: os
+            desc: the logic works on repo.Repo; reading the disk is the job of pkg/source
+          - pkg: github.com/i-zaitsev/gitcat/pkg/git
+            desc: the logic works on repo.Repo; running git is the job of pkg/source
+          - pkg: github.com/i-zaitsev/gitcat/pkg/source
+            desc: the logic receives a repo.Repo and must not build one itself
+
+issues:
+  exclude-dirs:
+    - testdata
