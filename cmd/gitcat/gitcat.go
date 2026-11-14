@@ -1,126 +1,61 @@
+// Gitcat concatenates the files of a git repository into a single document
+// in the text, JSON Lines, or Markdown format, ready to be loaded into the
+// context of a language model.
+//
+// Usage:
+//
+//	gitcat [flags] <repo>
+//	gitcat <command> [flags] [args]
+//
+// The repository is a local directory, an http(s) or ssh URL, or an scp-like
+// address such as git@github.com:i-zaitsev/gitcat.git. Remote repositories are
+// cloned with a depth of one. The files of a git work tree are listed by git,
+// so files ignored by .gitignore are left out.
+//
+// Run "gitcat help" for the list of commands and flags.
 package main
 
 import (
-	"fmt"
+	"context"
 	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/i-zaitsev/gitcat/pkg/files"
-	"github.com/i-zaitsev/gitcat/pkg/log"
-	"github.com/i-zaitsev/gitcat/pkg/ls"
-	"github.com/i-zaitsev/gitcat/pkg/output"
+	"github.com/i-zaitsev/pkg/cmd"
 )
 
-// writeOutput writes content to the specified file or stdout.
-// If outFile is empty, writes to stdout. Otherwise, appends the format extension.
-func writeOutput(content, outFile string, format output.Format) error {
-	if outFile == "" {
-		fmt.Println(content)
-		return nil
-	}
-
-	filename := outFile + "." + string(format)
-	if err := os.WriteFile(filename, []byte(content), 0644); err != nil {
-		return fmt.Errorf("failed to write output file: %w", err)
-	}
-
-	log.Info("output written to file", "file", filename)
-	return nil
+// main runs gitcat and exits with its status code.
+func main() {
+	os.Exit(run(os.Args[1:]))
 }
 
-func main() {
-	cli := NewCLI()
+// run executes gitcat with args and returns the exit status.
+// An interrupt cancels the context of the commands.
+func run(args []string) int {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	if err := cli.Parse(os.Args[1:]); err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+	e := newEnv(ctx, os.Stdout, os.Stderr)
+
+	reg, err := registry()
+	if err != nil {
+		e.Error("error: %v\n", err)
+		return 1
 	}
 
-	if cli.dryRun {
-		log.Info("dry run mode enabled - no actions will be executed")
-		if cli.location.IsLocal() {
-			log.Info("would list local repository", "path", cli.location.Path)
-		} else {
-			log.Info("would clone repository",
-				"url", cli.location.Path,
-				"protocol", cli.location.Kind,
-				"dir", cli.localDir)
-			if cli.tmpClone {
-				log.Warn("cloning to a tmp directory - deleted after execution")
-			}
-		}
-		return
+	if err = dispatch(e, reg, args); err != nil {
+		e.Error("error: %v\n", err)
+		return 1
 	}
 
-	var (
-		lsErr error
-		repo  *ls.RepoContent
-	)
+	return 0
+}
 
-	list := ls.NewList().
-		IgnoreDotFiles().
-		WithPaths(cli.includePaths...).
-		ExcludePaths(cli.excludePaths...)
-
-	if cli.location.IsLocal() {
-		log.Info("listing local repository", "path", cli.location.Path)
-		repo, lsErr = list.LocalRepo(cli.location.Path)
-	} else {
-		log.Info("cloning repository",
-			"url", cli.location.Path,
-			"protocol", cli.location.Kind,
-			"dir", cli.localDir)
-		cloneDir := cli.localDir
-		if cli.tmpClone {
-			tmpDir, err := os.MkdirTemp("", "gitcat-*")
-			if err != nil {
-				log.Error("failed to create tmp directory", "error", err)
-				os.Exit(1)
-			}
-			defer os.RemoveAll(tmpDir)
-			cloneDir = tmpDir
-		}
-		repo, lsErr = list.RemoteRepo(cli.location, cloneDir)
+// registry returns the commands of gitcat keyed by name.
+func registry() (map[string]command, error) {
+	reg := map[string]command{}
+	if err := cmd.Register(reg, newCat()); err != nil {
+		return nil, err
 	}
-
-	if lsErr != nil {
-		log.Error("failed to list repo files", "error", lsErr)
-		os.Exit(1)
-	}
-
-	log.Info("successfully listed repo files", "count", len(repo.Files))
-
-	if len(cli.keepExt) > 0 {
-		log.Warn("keeping only files with extensions", "extensions", cli.keepExt)
-		repo = files.MatchExt(repo, cli.keepExt...)
-	}
-
-	if cli.minSize > 0 || cli.maxSize >= 0 {
-		log.Info("applying size filters", "minsize", cli.minSize.InBytes(), "maxsize", cli.maxSize.InBytes())
-		repo = files.FilterBySize(repo, cli.minSize.InBytes(), cli.maxSize.InBytes())
-	}
-
-	log.Info("files after all filters", "count", len(repo.Files))
-
-	var content string
-	switch cli.outFmt {
-	case output.FormatJSONL:
-		log.Info("writing output to FormatGrouped")
-		jsonl, err := output.ToJSONL(repo, cli.headLines)
-		if err != nil {
-			log.Error("failed to generate JSONL output", "error", err)
-			os.Exit(1)
-		}
-		content = jsonl
-	case output.FormatText:
-		log.Info("writing output to text")
-		content = output.ToText(repo, cli.headLines)
-	case output.FormatMarkdown:
-		log.Info("writing output to markdown")
-		content = output.ToMarkdown(repo, cli.headLines)
-	}
-
-	if err := writeOutput(content, cli.outFile, cli.outFmt); err != nil {
-		log.Error("failed to write output", "error", err)
-		os.Exit(1)
-	}
+	return reg, nil
 }

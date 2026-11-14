@@ -1,74 +1,59 @@
+// Package gitpath parses the location of a git repository given on the
+// command line: a local directory, an http(s) or ssh URL, or an scp-like
+// address such as git@github.com:i-zaitsev/gitcat.git.
 package gitpath
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/i-zaitsev/gitcat/pkg/internal/utils"
 )
 
+// Kinds of repository locations.
 const (
 	SSH   = "ssh"
 	HTTPS = "https"
 	Local = "local"
 )
 
-// GitPath represents a git repository URL with protocol information.
+// GitPath is a repository location together with its kind,
+// one of [SSH], [HTTPS], or [Local].
 type GitPath struct {
 	Path string
 	Kind string
 }
 
+// FromDir returns the location of the local repository in localDir.
+// The directory must exist, and its path is made absolute.
 func FromDir(localDir string) (*GitPath, error) {
 	if !utils.DirExists(localDir) {
 		return nil, fmt.Errorf("directory %s does not exist", localDir)
 	}
-	return &GitPath{Path: localDir, Kind: Local}, nil
+	abs, err := filepath.Abs(localDir)
+	if err != nil {
+		return nil, fmt.Errorf("resolve %s: %w", localDir, err)
+	}
+	return &GitPath{Path: abs, Kind: Local}, nil
 }
 
+// IsLocal reports whether the location is a local directory.
 func (g *GitPath) IsLocal() bool {
 	return g.Kind == Local
 }
 
-// Extensions represent a list of file extensions to include in the output.
-type Extensions []string
-
-func (es *Extensions) String() string {
-	if es == nil {
-		return ""
+// Name returns the name of the repository: the last element of its path
+// without the .git suffix. It returns "repo" when the path has no usable
+// name. The name is the default directory to clone a remote repository into.
+func (g *GitPath) Name() string {
+	name := strings.TrimRight(g.Path, "/")
+	if i := strings.LastIndexAny(name, "/:"); i >= 0 {
+		name = name[i+1:]
 	}
-	return strings.Join(*es, ",")
-}
-
-func (es *Extensions) Set(value string) error {
-	ret := strings.Split(value, ",")
-	*es = make([]string, len(ret))
-	for i, v := range ret {
-		(*es)[i] = "." + strings.TrimSpace(strings.TrimPrefix(v, "."))
+	name = strings.TrimSuffix(name, ".git")
+	if name == "" || name == "." || name == ".." {
+		return "repo"
 	}
-	return nil
-}
-
-// Paths represent a list of directory paths for filtering.
-type Paths []string
-
-func (p *Paths) String() string {
-	if p == nil {
-		return ""
-	}
-	return strings.Join(*p, ",")
-}
-
-func (p *Paths) Set(value string) error {
-	if value == "" {
-		*p = []string{}
-		return nil
-	}
-	parts := strings.Split(value, ",")
-	*p = make([]string, len(parts))
-	for i, path := range parts {
-		trimmed := strings.TrimSpace(path)
-		(*p)[i] = strings.TrimSuffix(trimmed, "/")
-	}
-	return nil
+	return name
 }

@@ -1,10 +1,13 @@
 package gitpath
 
-// Parse returns git location parsed from the given string.
-// Supports both local and remote paths.
+import "github.com/i-zaitsev/gitcat/pkg/internal/utils"
+
+// Parse returns the repository location described by location.
+// An existing directory is a local repository, see [FromDir].
+// Anything else must be a remote address accepted by [FromURL].
 func Parse(location string) (*GitPath, error) {
-	if path, err := FromDir(location); err == nil {
-		return path, nil
+	if utils.DirExists(location) {
+		return FromDir(location)
 	}
 	return FromURL(location)
 }
