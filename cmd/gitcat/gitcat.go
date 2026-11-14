@@ -54,7 +54,7 @@ func run(args []string) int {
 // registry returns the commands of gitcat keyed by name.
 func registry() (map[string]command, error) {
 	reg := map[string]command{}
-	if err := cmd.Register(reg, newCat()); err != nil {
+	if err := cmd.Register(reg, newCat(), new(versionCmd)); err != nil {
 		return nil, err
 	}
 	return reg, nil

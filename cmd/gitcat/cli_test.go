@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/i-zaitsev/gitcat/internal/version"
 	"github.com/i-zaitsev/pkg/assert"
 )
 
@@ -30,6 +31,21 @@ func TestRegistry(t *testing.T) {
 
 	assert.NotErr(t, err)
 	assert.HasKey(t, reg, defaultCmd)
+	assert.HasKey(t, reg, "version")
+}
+
+func TestDispatch_Version(t *testing.T) {
+	stdout, stderr, err := runGitcat(t, "version")
+
+	assert.NotErr(t, err)
+	assert.Eq(t, stderr, "")
+	assert.Eq(t, stdout, version.Get()+"\n")
+}
+
+func TestDispatch_Version_RejectsArguments(t *testing.T) {
+	_, _, err := runGitcat(t, "version", "extra")
+
+	assert.ErrContains(t, err, "version: invalid argument: extra")
 }
 
 func TestDispatch_Help(t *testing.T) {
@@ -43,6 +59,7 @@ func TestDispatch_Help(t *testing.T) {
 				"Usage:\n  gitcat [flags] <repo>",
 				"Commands:\n",
 				"Concatenate the files of a repository",
+				"Print the version of gitcat",
 				"-fmt value",
 				"Examples:",
 			)

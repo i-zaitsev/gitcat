@@ -10,6 +10,7 @@ import (
 	"maps"
 	"slices"
 
+	"github.com/i-zaitsev/gitcat/internal/version"
 	"github.com/i-zaitsev/gitcat/pkg/log"
 	"github.com/i-zaitsev/pkg/cmd"
 )
@@ -107,7 +108,7 @@ func dispatch(e *env, reg map[string]command, args []string) error {
 // printUsage writes the usage of the program to w: the synopsis, the
 // commands, the flags of the default command, and examples.
 func printUsage(w io.Writer, reg map[string]command) {
-	_, _ = fmt.Fprintf(w, "%s - concatenates a git repository into a single file\n\n", prog)
+	_, _ = fmt.Fprintf(w, "%s %s - concatenates a git repository into a single file\n\n", prog, version.Get())
 	_, _ = fmt.Fprintf(w, "Usage:\n  %s [flags] <repo>\n  %s <command> [flags] [args]\n\n", prog, prog)
 	_, _ = fmt.Fprintf(w, "Commands:\n%s\n", cmd.Usage(slices.Collect(maps.Values(reg))...))
 	_, _ = fmt.Fprintf(w, "Flags of %s, the default command:\n", defaultCmd)

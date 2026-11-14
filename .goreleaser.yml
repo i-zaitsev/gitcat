@@ -1,0 +1,31 @@
+version: 2
+
+builds:
+  - main: ./cmd/gitcat
+    binary: gitcat
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w
+      - -X github.com/i-zaitsev/gitcat/internal/version.version=v{{.Version}}
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: github-native
+
+release:
+  footer: |
+    See [CHANGELOG.md](https://github.com/i-zaitsev/gitcat/blob/{{ .Tag }}/CHANGELOG.md) for the full log.
