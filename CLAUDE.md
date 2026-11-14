@@ -16,8 +16,14 @@
    - `cmd/gitcat/` - CLI application entry point and argument parsing
    - `pkg/` - Reusable library packages with clear responsibilities
    - `pkg/internal/` - Internal utilities not exposed externally
-2. Each package should have a single, well-defined purpose
-3. Avoid circular dependencies between packages
+   - `internal/testutil/` - Test fixtures (file trees, git repos) shared by `pkg/` and `cmd/`
+2. Keep the logic separate from the I/O:
+   - `pkg/repo` models a repository as paths over an `fs.FS`; `pkg/filter`, `pkg/files`, and `pkg/output` work on it
+     without touching the disk, and their tests use `fstest.MapFS`
+   - `pkg/source` and `pkg/git` are the only packages that read the disk or run git
+   - depguard enforces the split (`logic-io-free` in `.golangci.yml`)
+3. Each package should have a single, well-defined purpose
+4. Avoid circular dependencies between packages
 
 ## Error Handling
 

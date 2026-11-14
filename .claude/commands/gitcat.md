@@ -12,7 +12,7 @@ Load a git repository into Claude's context using the gitcat tool.
 - `--md`: Use markdown format (default if no format specified)
 - `--jsonl`: Use JSONL format
 - `--text`: Use text format
-- `--to-file <filename>`: Save to file instead of loading into context
+- `--to-file <filename>`: Save to file instead of loading into context. Give the name without an extension: gitcat appends the format (`gitcat` becomes `gitcat.md`)
 
 **Steps:**
 
@@ -42,9 +42,10 @@ Load a git repository into Claude's context using the gitcat tool.
    ```
 
    Use `-tmp` flag for remote repos to auto-cleanup the clone.
+   Dotfiles (e.g. `.github`) are skipped unless `-dot` is passed. In a git work tree, files ignored by `.gitignore` are skipped too.
 
 5. **Load the output:**
-   - If saved to file: inform user where the file was saved (e.g., "myrepo.md")
+   - If saved to file: inform user where the file was saved (e.g., "gitcat.md")
    - If loading to context: read `/tmp/gitcat-context.<format>` using the Read tool
 
 6. **Analyze and summarize:**
@@ -70,10 +71,10 @@ Load a git repository into Claude's context using the gitcat tool.
 
 **Example usages:**
 ```
-/gitcat https://github.com/user/repo.git
-/gitcat https://github.com/user/repo.git --md
-/gitcat https://github.com/user/repo.git --jsonl
-/gitcat git@github.com:user/repo.git --md --to-file myrepo
+/gitcat https://github.com/i-zaitsev/gitcat.git
+/gitcat https://github.com/i-zaitsev/gitcat.git --md
+/gitcat https://github.com/i-zaitsev/gitcat.git --jsonl
+/gitcat git@github.com:i-zaitsev/gitcat.git --md --to-file gitcat
 /gitcat . --text
 /gitcat /path/to/local/repo --to-file project-context
 ```
