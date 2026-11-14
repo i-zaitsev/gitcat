@@ -1,3 +1,5 @@
+// Package termcolor colors text with ANSI escape codes. Colors are applied
+// only when standard error is a terminal; otherwise text is left as is.
 package termcolor
 
 import (
@@ -7,6 +9,7 @@ import (
 	"golang.org/x/term"
 )
 
+// ANSI escape codes.
 const (
 	reset  = "\033[0m"
 	red    = "\033[31m"
@@ -14,36 +17,40 @@ const (
 	blue   = "\033[34m"
 )
 
-var fmt func(code, s string) string
+// colorize wraps s in the escape code and a reset. It is set at start-up
+// and leaves s unchanged when standard error is not a terminal.
+var colorize func(code, s string) string
 
+// init picks the colorize function for the standard error stream.
 func init() {
 	if term.IsTerminal(int(os.Stderr.Fd())) {
-		fmt = func(code, s string) string {
+		colorize = func(code, s string) string {
 			return code + s + reset
 		}
 	} else {
-		fmt = func(code, s string) string {
+		colorize = func(_, s string) string {
 			return s
 		}
 	}
 }
 
-// Red returns text in red color.
+// Red returns s colored red.
 func Red(s string) string {
-	return fmt(red, s)
+	return colorize(red, s)
 }
 
-// Yellow returns text in yellow color.
+// Yellow returns s colored yellow.
 func Yellow(s string) string {
-	return fmt(yellow, s)
+	return colorize(yellow, s)
 }
 
-// Blue returns text in blue color.
+// Blue returns s colored blue.
 func Blue(s string) string {
-	return fmt(blue, s)
+	return colorize(blue, s)
 }
 
-// ForLevel colorizes text based on slog level.
+// ForLevel colors s by the log level: red for errors, yellow for warnings,
+// blue for debug messages, and no color for info messages.
 func ForLevel(level slog.Level, s string) string {
 	switch {
 	case level >= slog.LevelError:
