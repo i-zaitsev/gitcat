@@ -1,20 +1,38 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Which part of the version to increase
+        type: choice
+        options: [patch, minor, major]
 
 permissions:
   contents: write
 
 jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
   release:
+    needs: ci
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Tag
+        run: |
+          last=$(git describe --tags --abbrev=0)
+          IFS=. read -r major minor patch <<< "${last#v}"
+          case "${{ inputs.bump }}" in
+            major) next="v$((major + 1)).0.0" ;;
+            minor) next="v$major.$((minor + 1)).0" ;;
+            patch) next="v$major.$minor.$((patch + 1))" ;;
+          esac
+          git tag "$next"
+          git push origin "$next"
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
