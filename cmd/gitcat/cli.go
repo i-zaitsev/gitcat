@@ -12,6 +12,7 @@ import (
 
 	"github.com/i-zaitsev/gitcat/internal/version"
 	"github.com/i-zaitsev/gitcat/pkg/log"
+	"github.com/i-zaitsev/gitcat/pkg/termcolor"
 	"github.com/i-zaitsev/pkg/cmd"
 )
 
@@ -64,7 +65,7 @@ func newEnv(ctx context.Context, stdout, stderr io.Writer) *env {
 
 // Error writes a formatted message to the standard error of the env.
 func (e *env) Error(format string, args ...any) {
-	_, _ = fmt.Fprintf(e.stderr, format, args...)
+	_, _ = fmt.Fprint(e.stderr, termcolor.Red(fmt.Sprintf(format, args...)))
 }
 
 // dispatch runs the command named by the first argument with the remaining

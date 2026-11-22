@@ -21,6 +21,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/i-zaitsev/gitcat/pkg/termcolor"
 	"github.com/i-zaitsev/pkg/cmd"
 )
 
@@ -36,6 +37,8 @@ func run(args []string) int {
 	defer stop()
 
 	e := newEnv(ctx, os.Stdout, os.Stderr)
+
+	termcolor.Init(termcolor.DefaultConfig())
 
 	reg, err := registry()
 	if err != nil {

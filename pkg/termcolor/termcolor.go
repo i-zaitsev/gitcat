@@ -18,21 +18,54 @@ const (
 	blue   = "\033[34m"
 )
 
-// colorize wraps s in the escape code and a reset. It is set at start-up
-// and leaves s unchanged when standard error is not a terminal.
-var colorize func(code, s string) string
+// colorize wraps s in the escape code and a reset.
+// The function is explicitly configured via Init and doesn't do any coloring by default.
+var colorize = plain
 
-// init picks the colorize function for the standard error stream.
-func init() {
-	if term.IsTerminal(int(os.Stderr.Fd())) {
-		colorize = func(code, s string) string {
-			return code + s + reset
-		}
+// plain returns s as is.
+func plain(_, s string) string {
+	return s
+}
+
+// wrap returns s in the escape code and a reset.
+func wrap(code, s string) string {
+	return code + s + reset
+}
+
+// ColorMode defines when the text is colored.
+type ColorMode int
+
+// Color modes.
+const (
+	ColorModeNoColor ColorMode = iota
+	ColorModeTerminalOnly
+	ColorModeAlways
+)
+
+// Config configures the coloring.
+type Config struct {
+	ColorMode ColorMode
+}
+
+// DefaultConfig enables coloring for terminal output only.
+func DefaultConfig() *Config {
+	return &Config{ColorMode: ColorModeTerminalOnly}
+}
+
+// Init picks the colorize function for the output strings.
+// Note this is intentionally upper-cased to avoid automatic initialization.
+func Init(cfg *Config) {
+	if enabled(cfg.ColorMode, term.IsTerminal(int(os.Stderr.Fd()))) {
+		colorize = wrap
 	} else {
-		colorize = func(_, s string) string {
-			return s
-		}
+		colorize = plain
 	}
+}
+
+// enabled reports whether the mode colors the output
+// that goes to a terminal or not.
+func enabled(mode ColorMode, isTerminal bool) bool {
+	return mode == ColorModeAlways || (mode == ColorModeTerminalOnly && isTerminal)
 }
 
 // Red returns s colored red.
