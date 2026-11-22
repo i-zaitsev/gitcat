@@ -29,7 +29,8 @@ Examples:
   gitcat git@github.com:i-zaitsev/gitcat.git
   gitcat -tmp -fmt md https://github.com/i-zaitsev/gitcat
   gitcat -dryrun -dir ./gitcat-src git@github.com:i-zaitsev/gitcat.git
-  gitcat -tmp -path pkg/files,cmd -exclude testdata https://github.com/i-zaitsev/gitcat
+  gitcat -tmp -preset go -ignore testdata,*_test.go https://github.com/i-zaitsev/gitcat
+  gitcat -tmp -only pkg/files,cmd -ignore testdata https://github.com/i-zaitsev/gitcat
   gitcat -tmp -maxsize 500 -keep .go https://github.com/i-zaitsev/gitcat
   gitcat -tmp -head 50 -out gitcat https://github.com/i-zaitsev/gitcat
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.2.0 (unreleased)
+
+### Features
+
+- `-preset go|python|c|cpp|all` selects the sources and docs of a project and skips its build artifacts and caches
+- `-keep` and `-ignore` take file names and globs like `go.mod`, `*.py[cod]`, or `__pycache__`
+
+### Breaking
+
+- `-path` is now `-only`, and `-exclude` is now `-ignore`
+- `-ignore` without a slash matches at any depth: `-ignore testdata` also skips `pkg/x/testdata`
+- `-keep go` matches a file named `go`: use `-keep .go` for the extension
+- Library API: `filter.Filter` has `Only`, `Ignore`, and `Keep` in place of `WithPaths`, `ExcludePaths`, and `KeepExt`
+
 ## v0.1.0 (2026-11-10)
 
 The first tagged release.

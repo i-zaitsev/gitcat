@@ -3,29 +3,30 @@ package main
 import (
 	"testing"
 
+	"github.com/i-zaitsev/gitcat/pkg/preset"
 	"github.com/i-zaitsev/pkg/assert"
 )
 
-func TestExtensions_Set(t *testing.T) {
+func TestPatterns_Set(t *testing.T) {
 	tests := []struct {
 		value   string
-		want    extensions
+		want    patterns
 		wantStr string
 	}{
 		{
 			"go",
-			extensions{".go"},
-			".go",
+			patterns{"go"},
+			"go",
 		},
 		{
-			".go,md",
-			extensions{".go", ".md"},
-			".go,.md",
+			".go,go.mod",
+			patterns{".go", "go.mod"},
+			".go,go.mod",
 		},
 		{
-			" .go , md ,",
-			extensions{".go", ".md"},
-			".go,.md",
+			" *.py[cod] , __pycache__ ,",
+			patterns{"*.py[cod]", "__pycache__"},
+			"*.py[cod],__pycache__",
 		},
 		{
 			"",
@@ -35,13 +36,30 @@ func TestExtensions_Set(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.value, func(t *testing.T) {
-			var es extensions
+			var ps patterns
 
-			assert.NotErr(t, es.Set(tt.value))
-			assert.Eq(t, es, tt.want)
-			assert.Eq(t, es.String(), tt.wantStr)
+			assert.NotErr(t, ps.Set(tt.value))
+			assert.Eq(t, ps, tt.want)
+			assert.Eq(t, ps.String(), tt.wantStr)
 		})
 	}
+}
+
+func TestPatterns_Set_Invalid(t *testing.T) {
+	var ps patterns
+
+	assert.ErrContains(t, ps.Set("*.go,["), `invalid pattern "["`)
+}
+
+func TestPresets_Set(t *testing.T) {
+	var ps presets
+
+	assert.NotErr(t, ps.Set("c|go"))
+	assert.NotErr(t, ps.Set("python"))
+
+	assert.Eq(t, ps, presets{preset.C, preset.Go, preset.Python})
+	assert.Eq(t, ps.String(), "c|go|python")
+	assert.ErrContains(t, ps.Set("cobol"), `unknown preset "cobol"`)
 }
 
 func TestPaths_Set(t *testing.T) {
@@ -78,16 +96,16 @@ func TestPaths_Set(t *testing.T) {
 
 func TestListFlags_RepeatedFlagsAccumulate(t *testing.T) {
 	var (
-		es extensions
+		ps patterns
 		p  paths
 	)
 
-	assert.NotErr(t, es.Set("go"))
-	assert.NotErr(t, es.Set("md,txt"))
+	assert.NotErr(t, ps.Set(".go"))
+	assert.NotErr(t, ps.Set(".md,go.mod"))
 	assert.NotErr(t, p.Set("pkg"))
 	assert.NotErr(t, p.Set("cmd/"))
 
-	assert.Eq(t, es, extensions{".go", ".md", ".txt"})
+	assert.Eq(t, ps, patterns{".go", ".md", "go.mod"})
 	assert.Eq(t, p, paths{"pkg", "cmd"})
 }
 
@@ -104,12 +122,14 @@ func TestSize_Set(t *testing.T) {
 
 func TestFlagValues_NilString(t *testing.T) {
 	var (
-		es *extensions
+		ps *patterns
 		p  *paths
+		pr *presets
 		s  *size
 	)
 
-	assert.Eq(t, es.String(), "")
+	assert.Eq(t, ps.String(), "")
 	assert.Eq(t, p.String(), "")
+	assert.Eq(t, pr.String(), "")
 	assert.Eq(t, s.String(), "0")
 }

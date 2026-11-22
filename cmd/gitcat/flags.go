@@ -6,29 +6,65 @@ import (
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/i-zaitsev/gitcat/pkg/filter"
+	"github.com/i-zaitsev/gitcat/pkg/preset"
 )
 
-// extensions is a comma-separated list of file extensions given as a flag.
-// Each extension is stored with a leading dot.
-type extensions []string
+// patterns is a comma-separated list of file patterns given as a flag,
+// in the syntax described by the [filter] package.
+type patterns []string
 
-// String returns the extensions separated by commas.
-func (es *extensions) String() string {
-	if es == nil {
+// String returns the patterns separated by commas.
+func (ps *patterns) String() string {
+	if ps == nil {
 		return ""
 	}
-	return strings.Join(*es, ",")
+	return strings.Join(*ps, ",")
 }
 
-// Set appends the comma-separated list in value to the extensions, adding a
-// leading dot where it is missing and skipping empty items. The flag can be
-// repeated.
-func (es *extensions) Set(value string) error {
+// Set appends the comma-separated list in value to the patterns, skipping
+// empty items. A malformed pattern is an error. The flag can be repeated.
+func (ps *patterns) Set(value string) error {
 	for item := range strings.SplitSeq(value, ",") {
-		if ext := strings.TrimPrefix(strings.TrimSpace(item), "."); ext != "" {
-			*es = append(*es, "."+ext)
+		pattern := strings.TrimSpace(item)
+		if pattern == "" {
+			continue
 		}
+		if err := filter.CheckPattern(pattern); err != nil {
+			return err
+		}
+		*ps = append(*ps, pattern)
 	}
+	return nil
+}
+
+// presets is a list of presets given as a flag, such as "c|cpp|go".
+type presets []preset.Option
+
+// String returns the names of the presets joined with |.
+func (ps *presets) String() string {
+	if ps == nil {
+		return ""
+	}
+	var b strings.Builder
+	for i, p := range *ps {
+		if i > 0 {
+			b.WriteByte('|')
+		}
+		b.WriteString(p.String())
+	}
+	return b.String()
+}
+
+// Set appends the presets named in value, see [preset.Parse]. The flag can
+// be repeated.
+func (ps *presets) Set(value string) error {
+	opts, err := preset.Parse(value)
+	if err != nil {
+		return err
+	}
+	*ps = append(*ps, opts...)
 	return nil
 }
 

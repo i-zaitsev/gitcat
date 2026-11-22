@@ -5,13 +5,16 @@ import (
 	"flag"
 	"io"
 	"os"
+	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/i-zaitsev/gitcat/pkg/files"
 	"github.com/i-zaitsev/gitcat/pkg/filter"
 	"github.com/i-zaitsev/gitcat/pkg/gitpath"
 	"github.com/i-zaitsev/gitcat/pkg/log"
 	"github.com/i-zaitsev/gitcat/pkg/output"
+	"github.com/i-zaitsev/gitcat/pkg/preset"
 	"github.com/i-zaitsev/gitcat/pkg/repo"
 	"github.com/i-zaitsev/gitcat/pkg/source"
 	"github.com/i-zaitsev/pkg/cmd"
@@ -19,21 +22,22 @@ import (
 
 // catCmd concatenates the files of a repository into a single document.
 type catCmd struct {
-	fs           *flag.FlagSet
-	location     *gitpath.GitPath
-	localDir     string
-	outFile      string
-	dryRun       bool
-	debug        bool
-	tmpClone     bool
-	dotFiles     bool
-	outFmt       output.Format
-	keepExt      extensions
-	includePaths paths
-	excludePaths paths
-	minSize      size
-	maxSize      size
-	headLines    int
+	fs        *flag.FlagSet
+	location  *gitpath.GitPath
+	localDir  string
+	outFile   string
+	dryRun    bool
+	debug     bool
+	tmpClone  bool
+	dotFiles  bool
+	outFmt    output.Format
+	presets   presets
+	keep      patterns
+	ignore    patterns
+	only      paths
+	minSize   size
+	maxSize   size
+	headLines int
 }
 
 // newCat returns a cat command with the default options and its flags defined.
@@ -47,9 +51,10 @@ func newCat() *catCmd {
 	c.fs.StringVar(&c.outFile, "out", "", "output file without extension")
 	c.fs.StringVar(&c.localDir, "dir", "", "local directory to clone into (defaults to repo name)")
 	c.fs.Var(&c.outFmt, "fmt", "output format: text, jsonl, or md")
-	c.fs.Var(&c.keepExt, "keep", "comma-separated list of file extensions to keep (default: all)")
-	c.fs.Var(&c.includePaths, "path", "comma-separated paths to include")
-	c.fs.Var(&c.excludePaths, "exclude", "comma-separated paths to exclude")
+	c.fs.Var(&c.presets, "preset", "presets combined with |: "+strings.Join(preset.Names(), ", "))
+	c.fs.Var(&c.keep, "keep", "comma-separated extensions, names, or globs to keep (default: all)")
+	c.fs.Var(&c.ignore, "ignore", "comma-separated names, globs, or paths to ignore")
+	c.fs.Var(&c.only, "only", "comma-separated paths to include")
 	c.fs.Var(&c.minSize, "minsize", "minimum file size in KB (e.g., 100)")
 	c.fs.Var(&c.maxSize, "maxsize", "maximum file size in KB (e.g., 500)")
 	c.fs.IntVar(&c.headLines, "head", 0, "number of lines to read from each file (0 = all)")
@@ -161,12 +166,14 @@ func (c *catCmd) open(e *env, cloneDir string) (*repo.Repo, error) {
 	return source.Remote(e.ctx, c.location.Path, cloneDir)
 }
 
-// fileFilter returns the filter that the flags describe.
+// fileFilter returns the filter that the flags describe. The rules of the
+// presets are added to the -keep and -ignore patterns.
 func (c *catCmd) fileFilter() *filter.Filter {
+	p := preset.New(c.presets...)
 	f := filter.New().
-		Only(c.includePaths...).
-		Ignore(c.excludePaths...).
-		Keep(c.keepExt...).
+		Only(c.only...).
+		Ignore(slices.Concat(c.ignore, p.Ignore)...).
+		Keep(slices.Concat(c.keep, p.Keep)...).
 		SizeRange(int64(c.minSize), int64(c.maxSize))
 	if !c.dotFiles {
 		f.IgnoreDotFiles()

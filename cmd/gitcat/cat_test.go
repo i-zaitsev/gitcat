@@ -10,6 +10,7 @@ import (
 	"github.com/i-zaitsev/gitcat/internal/testutil"
 	"github.com/i-zaitsev/gitcat/pkg/gitpath"
 	"github.com/i-zaitsev/gitcat/pkg/output"
+	"github.com/i-zaitsev/gitcat/pkg/preset"
 	"github.com/i-zaitsev/pkg/assert"
 )
 
@@ -48,16 +49,17 @@ func TestCatParse_Flags(t *testing.T) {
 	c := newCat()
 
 	err := c.Parse([]string{
-		"-fmt", "md", "-keep", "go,md", "-path", "pkg/,cmd", "-exclude", "testdata",
-		"-minsize", "1", "-maxsize", "4", "-head", "5", "-dot", "-tmp", "-out", "ctx",
+		"-fmt", "md", "-keep", ".go,go.mod", "-only", "pkg/,cmd", "-ignore", "testdata,*.pb.go",
+		"-preset", "go", "-minsize", "1", "-maxsize", "4", "-head", "5", "-dot", "-tmp", "-out", "ctx",
 		"git@github.com:user/repo.git",
 	})
 
 	assert.NotErr(t, err)
 	assert.Eq(t, c.outFmt, output.FormatMarkdown)
-	assert.Eq(t, c.keepExt, extensions{".go", ".md"})
-	assert.Eq(t, c.includePaths, paths{"pkg", "cmd"})
-	assert.Eq(t, c.excludePaths, paths{"testdata"})
+	assert.Eq(t, c.keep, patterns{".go", "go.mod"})
+	assert.Eq(t, c.only, paths{"pkg", "cmd"})
+	assert.Eq(t, c.ignore, patterns{"testdata", "*.pb.go"})
+	assert.Eq(t, c.presets, presets{preset.Go})
 	assert.Eq(t, c.minSize, size(1024))
 	assert.Eq(t, c.maxSize, size(4096))
 	assert.Eq(t, c.headLines, 5)
@@ -114,6 +116,26 @@ func TestCatParse_Errors(t *testing.T) {
 			[]string{"-nope", dir},
 			"flag provided but not defined: -nope",
 		},
+		{
+			"unknown_preset",
+			[]string{"-preset", "cobol", dir},
+			`unknown preset "cobol": must be one of: go, python, c, cpp, all`,
+		},
+		{
+			"invalid_pattern",
+			[]string{"-ignore", "[", dir},
+			`invalid pattern "["`,
+		},
+		{
+			"removed_path_flag",
+			[]string{"-path", "pkg", dir},
+			"flag provided but not defined: -path",
+		},
+		{
+			"removed_exclude_flag",
+			[]string{"-exclude", "pkg", dir},
+			"flag provided but not defined: -exclude",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -153,22 +175,32 @@ func TestCat_Filters(t *testing.T) {
 	}{
 		{
 			"keep_extensions",
-			[]string{"-keep", "go"},
+			[]string{"-keep", ".go"},
 			"package main\n\n",
 		},
 		{
-			"include_path",
-			[]string{"-path", "docs"},
+			"keep_name",
+			[]string{"-keep", "LICENSE"},
+			"MIT\n\n",
+		},
+		{
+			"only_path",
+			[]string{"-only", "docs"},
 			"# Guide\n\n",
 		},
 		{
-			"exclude_path_and_dotfiles",
-			[]string{"-exclude", "docs,testdata", "-dot", "-keep", "env,go"},
+			"ignore_and_dotfiles",
+			[]string{"-ignore", "docs,testdata", "-dot", "-keep", ".env,.go"},
 			"SECRET=1\n\npackage main\n\n",
 		},
 		{
+			"ignore_glob",
+			[]string{"-ignore", "*.md,*.txt,*.go"},
+			"MIT\n\n",
+		},
+		{
 			"max_size",
-			[]string{"-maxsize", "1", "-keep", "txt,go"},
+			[]string{"-maxsize", "1", "-keep", ".txt,.go"},
 			"package main\n\n",
 		},
 		{
@@ -178,13 +210,86 @@ func TestCat_Filters(t *testing.T) {
 		},
 		{
 			"head",
-			[]string{"-head", "1", "-keep", "go,md"},
+			[]string{"-head", "1", "-keep", ".go,.md"},
 			"package main\n\n# Guide\n\n",
 		},
 	}
 	dir := sampleRepo(t)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			args := append([]string{"-fmt", "text"}, tt.args...)
+
+			stdout, _, err := runGitcat(t, append(args, dir)...)
+
+			assert.NotErr(t, err)
+			assert.Eq(t, stdout, tt.want)
+		})
+	}
+}
+
+func TestCat_Presets(t *testing.T) {
+	tests := []struct {
+		name  string
+		files map[string]string
+		args  []string
+		want  string
+	}{
+		{
+			"python",
+			map[string]string{
+				"a.py":                          "print(1)\n",
+				"README.rst":                    "Title\n",
+				"setup.cfg":                     "[metadata]\n",
+				"pkg/__pycache__/a.cpython.pyc": "cached\n",
+				"pkg/b.pyc":                     "compiled\n",
+				"proj.egg-info/PKG-INFO":        "Name: proj\n",
+				"build/lib/a.py":                "print(1)\n",
+			},
+			[]string{"-preset", "python"},
+			"print(1)\n\nTitle\n\n",
+		},
+		{
+			"go_with_ignore",
+			map[string]string{
+				"go.mod":         "module m\n",
+				"main.go":        "package main\n",
+				"main_test.go":   "package main_test\n",
+				"testdata/x.go":  "package x\n",
+				"vendor/v/v.go":  "package v\n",
+				"bin/tool.sh":    "#!/bin/sh\n",
+				"Makefile":       "all:\n",
+				"docs/README.md": "# Docs\n",
+			},
+			[]string{"-preset", "go", "-ignore", "testdata,*_test.go,*.md"},
+			"package main\n\nmodule m\n\n",
+		},
+		{
+			"go_plus_keep",
+			map[string]string{
+				"main.go":  "package main\n",
+				"Makefile": "all:\n",
+				"x.yaml":   "a: 1\n",
+			},
+			[]string{"-preset", "go", "-keep", "Makefile"},
+			"all:\n\npackage main\n\n",
+		},
+		{
+			"c_and_go",
+			map[string]string{
+				"main.c":    "int main;\n",
+				"x.h":       "#pragma once\n",
+				"build/a.o": "obj\n",
+				"main.go":   "package main\n",
+				"notes.txt": "todo\n",
+			},
+			[]string{"-preset", "c|go"},
+			"int main;\n\npackage main\n\n#pragma once\n\n",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			testutil.WriteFiles(t, dir, tt.files)
 			args := append([]string{"-fmt", "text"}, tt.args...)
 
 			stdout, _, err := runGitcat(t, append(args, dir)...)
@@ -213,7 +318,7 @@ func TestCat_OutFile(t *testing.T) {
 	dir := sampleRepo(t)
 	out := filepath.Join(t.TempDir(), "context")
 
-	stdout, stderr, err := runGitcat(t, "-fmt", "text", "-keep", "go", "-out", out, dir)
+	stdout, stderr, err := runGitcat(t, "-fmt", "text", "-keep", ".go", "-out", out, dir)
 
 	assert.NotErr(t, err)
 	assert.Eq(t, stdout, "")

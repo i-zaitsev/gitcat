@@ -10,6 +10,7 @@ stdout or a file.
 * Reads local directories and git work trees
 * Respects `.gitignore` in git work trees
 * Skips binary files and dotfiles (opt in with `-dot`)
+* Presets for Go, Python, C, and C++ projects: sources and docs only, no build artifacts or caches
 * Filters by path, extension, and file size, and can keep only the first lines of each file
 * Clones into a temporary directory with automatic cleanup
 * Dry-run mode and colored logging
@@ -56,8 +57,14 @@ gitcat -tmp -fmt md https://github.com/i-zaitsev/gitcat
 # current directory
 gitcat -fmt text .
 
+# Go sources and docs, without tests
+gitcat -tmp -preset go -ignore testdata,*_test.go https://github.com/i-zaitsev/gitcat
+
+# C and C++ sources, headers, and build files
+gitcat -preset 'c|cpp' .
+
 # remote, with only some paths included and testdata excluded
-gitcat -tmp -path pkg/files,cmd -exclude testdata https://github.com/i-zaitsev/gitcat
+gitcat -tmp -only pkg/files,cmd -ignore testdata https://github.com/i-zaitsev/gitcat
 
 # Go files up to 500 KB
 gitcat -tmp -maxsize 500 -keep .go https://github.com/i-zaitsev/gitcat
@@ -80,6 +87,7 @@ See `gitcat -h` for more options.
 * Files are grouped by extension and sorted by path within a group
 * Files without an extension come first
 * Paths in the output are relative to the repository root
+* `-ignore` patterns without a slash match at any depth, like `.gitignore`
 
 ## License
 
