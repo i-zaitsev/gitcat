@@ -164,9 +164,9 @@ func (c *catCmd) open(e *env, cloneDir string) (*repo.Repo, error) {
 // fileFilter returns the filter that the flags describe.
 func (c *catCmd) fileFilter() *filter.Filter {
 	f := filter.New().
-		WithPaths(c.includePaths...).
-		ExcludePaths(c.excludePaths...).
-		KeepExt(c.keepExt...).
+		Only(c.includePaths...).
+		Ignore(c.excludePaths...).
+		Keep(c.keepExt...).
 		SizeRange(int64(c.minSize), int64(c.maxSize))
 	if !c.dotFiles {
 		f.IgnoreDotFiles()

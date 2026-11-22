@@ -50,22 +50,22 @@ func TestApply_PathRules(t *testing.T) {
 		},
 		{
 			"include_paths",
-			New().WithPaths("pkg/a", "main.go"),
+			New().Only("pkg/a", "main.go"),
 			[]string{"main.go", "pkg/a/a.go"},
 		},
 		{
 			"exclude_paths",
-			New().IgnoreDotFiles().ExcludePaths("pkg", "testdata"),
+			New().IgnoreDotFiles().Ignore("pkg", "testdata"),
 			[]string{"README", "main.go"},
 		},
 		{
 			"exclude_wins_over_include",
-			New().WithPaths("pkg").ExcludePaths("pkg/b"),
+			New().Only("pkg").Ignore("pkg/b"),
 			[]string{"pkg/a/a.go"},
 		},
 		{
 			"include_is_not_a_name_prefix",
-			New().WithPaths("pkg/a/a"),
+			New().Only("pkg/a/a"),
 			nil,
 		},
 	}
@@ -87,22 +87,22 @@ func TestApply_PathRules_AreCleaned(t *testing.T) {
 	}{
 		{
 			"include_trailing_slash",
-			New().WithPaths("pkg/"),
+			New().Only("pkg/"),
 			[]string{"pkg/a.go"},
 		},
 		{
 			"include_dot_slash",
-			New().WithPaths("./pkg"),
+			New().Only("./pkg"),
 			[]string{"pkg/a.go"},
 		},
 		{
 			"include_root",
-			New().WithPaths("."),
+			New().Only("."),
 			[]string{"cmd/b.go", "pkg/a.go"},
 		},
 		{
 			"exclude_trailing_slash",
-			New().ExcludePaths("pkg/"),
+			New().Ignore("pkg/"),
 			[]string{"cmd/b.go"},
 		},
 	}
@@ -116,12 +116,133 @@ func TestApply_PathRules_AreCleaned(t *testing.T) {
 	}
 }
 
-func TestApply_KeepExt(t *testing.T) {
+func TestApply_Keep_Extensions(t *testing.T) {
 	r := newRepo(t, map[string]string{"a.go": "", "b.md": "", "c": "", "d.txt": "", "pkg/e.go": ""})
 
-	got := New().KeepExt(".go", ".md", ".go").Apply(r)
+	got := New().Keep(".go", ".md", ".go").Apply(r)
 
 	assert.Eq(t, slices.Collect(got.Paths()), []string{"a.go", "b.md", "pkg/e.go"})
+}
+
+var globTree = map[string]string{
+	"a.py":                          "",
+	"cmd/pkg/files/y.go":            "",
+	"docs/a.md":                     "",
+	"docs/sub/b.md":                 "",
+	"go.mod":                        "",
+	"pkg/__pycache__/a.cpython.pyc": "",
+	"pkg/b.py":                      "",
+	"pkg/b.pyo":                     "",
+	"pkg/files/x.go":                "",
+	"proj.egg-info/PKG-INFO":        "",
+	"sub/go.mod":                    "",
+	"tools/go.mod.bak":              "",
+}
+
+func TestApply_Keep_Patterns(t *testing.T) {
+	tests := []struct {
+		name     string
+		patterns []string
+		want     []string
+	}{
+		{
+			"exact_name_at_any_depth",
+			[]string{"go.mod"},
+			[]string{"go.mod", "sub/go.mod"},
+		},
+		{
+			"name_glob",
+			[]string{"*.py"},
+			[]string{"a.py", "pkg/b.py"},
+		},
+		{
+			"character_class",
+			[]string{"*.py[co]"},
+			[]string{"pkg/__pycache__/a.cpython.pyc", "pkg/b.pyo"},
+		},
+		{
+			"anchored_path",
+			[]string{"docs/*.md"},
+			[]string{"docs/a.md"},
+		},
+		{
+			"bare_word_is_a_name",
+			[]string{"md"},
+			nil,
+		},
+	}
+	r := newRepo(t, globTree)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := New().Keep(tt.patterns...).Apply(r)
+
+			assert.Eq(t, slices.Collect(got.Paths()), tt.want)
+		})
+	}
+}
+
+func TestApply_Ignore_Patterns(t *testing.T) {
+	tests := []struct {
+		name     string
+		patterns []string
+		drop     []string
+	}{
+		{
+			"dir_name_at_any_depth",
+			[]string{"__pycache__"},
+			[]string{"pkg/__pycache__/a.cpython.pyc"},
+		},
+		{
+			"character_class",
+			[]string{"*.py[cod]"},
+			[]string{"pkg/__pycache__/a.cpython.pyc", "pkg/b.pyo"},
+		},
+		{
+			"dir_glob",
+			[]string{"*.egg-info"},
+			[]string{"proj.egg-info/PKG-INFO"},
+		},
+		{
+			"anchored_path",
+			[]string{"pkg/files"},
+			[]string{"pkg/files/x.go"},
+		},
+		{
+			"anchored_glob_covers_subdirs",
+			[]string{"docs/*"},
+			[]string{"docs/a.md", "docs/sub/b.md"},
+		},
+		{
+			"trailing_slash_is_not_anchored",
+			[]string{"files/"},
+			[]string{"cmd/pkg/files/y.go", "pkg/files/x.go"},
+		},
+	}
+	r := newRepo(t, globTree)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := New().Ignore(tt.patterns...).Apply(r)
+
+			want := slices.Collect(r.Paths())
+			want = slices.DeleteFunc(want, func(p string) bool { return slices.Contains(tt.drop, p) })
+			assert.Eq(t, slices.Collect(got.Paths()), want)
+		})
+	}
+}
+
+func TestApply_Ignore_WinsOverKeepAndOnly(t *testing.T) {
+	r := newRepo(t, globTree)
+
+	got := New().Only("pkg").Keep(".py", ".pyo").Ignore("__pycache__", "*.pyo").Apply(r)
+
+	assert.Eq(t, slices.Collect(got.Paths()), []string{"pkg/b.py"})
+}
+
+func TestCheckPattern(t *testing.T) {
+	assert.NotErr(t, CheckPattern("*.py[cod]"))
+	assert.NotErr(t, CheckPattern("docs/*"))
+	assert.ErrContains(t, CheckPattern("["), `invalid pattern "["`)
+	assert.ErrContains(t, CheckPattern("a[b"), `invalid pattern "a[b"`)
 }
 
 func TestApply_SizeRange(t *testing.T) {
@@ -180,8 +301,8 @@ func TestApply_AllRules(t *testing.T) {
 
 	got := New().
 		IgnoreDotFiles().
-		ExcludePaths("cmd").
-		KeepExt(".go").
+		Ignore("cmd").
+		Keep(".go").
 		SizeRange(0, 1024).
 		Apply(r)
 
