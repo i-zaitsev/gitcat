@@ -20,6 +20,7 @@
 2. Keep the logic separate from the I/O:
    - `pkg/repo` models a repository as paths over `fs.FS` 
    - `pkg/filter`, `pkg/files`, and `pkg/output` work on it without touching the disk, and their tests use `fstest.MapFS`
+   - `pkg/preset` is pure data: named keep/ignore patterns for `pkg/filter`
    - `pkg/source` and `pkg/git` are the only packages that read the disk or run git
    - depguard enforces the split (`logic-io-free` in `.golangci.yml`)
 3. Each package should have a single, well-defined purpose

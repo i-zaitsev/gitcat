@@ -30,6 +30,7 @@ linters-settings:
           - "**/pkg/filter/**"
           - "**/pkg/files/**"
           - "**/pkg/output/**"
+          - "**/pkg/preset/**"
           - "!$test"
         deny:
           - pkg: os
