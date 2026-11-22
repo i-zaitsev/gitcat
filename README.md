@@ -31,7 +31,7 @@ From source:
 ```bash
 git clone https://github.com/i-zaitsev/gitcat.git
 cd gitcat
-make build      # writes bin/gitcat
+make build  # writes bin/gitcat
 ```
 
 Check the installed version with `gitcat version`.
@@ -53,19 +53,19 @@ gitcat git@github.com:i-zaitsev/gitcat.git
 # temporary clone, Markdown output
 gitcat -tmp -fmt md https://github.com/i-zaitsev/gitcat
 
-# current directory, for example a checkout of gitcat
+# current directory
 gitcat -fmt text .
 
-# only some paths
+# remote, with only some paths included and testdata excluded
 gitcat -tmp -path pkg/files,cmd -exclude testdata https://github.com/i-zaitsev/gitcat
 
 # Go files up to 500 KB
 gitcat -tmp -maxsize 500 -keep .go https://github.com/i-zaitsev/gitcat
 
-# first 50 lines of each file, written to gitcat.jsonl
+# take first 50 lines of each file, written to gitcat.jsonl
 gitcat -tmp -head 50 -out gitcat https://github.com/i-zaitsev/gitcat
 
-# log what would happen
+# only log what would happen when the command is executed
 gitcat -dryrun -dir ./gitcat-src git@github.com:i-zaitsev/gitcat.git
 ```
 
@@ -73,12 +73,13 @@ See `gitcat -h` for more options.
 
 ## Notes
 
-* In a git work tree, the files come from `git ls-files`. Elsewhere, the directory is walked.
-* Only regular files are read: no symbolic links or submodules.
-* Binary files (a NUL byte in the first 8000 bytes) are skipped.
-* Files are grouped by extension and sorted by path within a group.
-* Files without an extension come first.
-* Paths in the output are relative to the repository root.
+* In a git work tree, the files come from `git ls-files` 
+* Elsewhere, the directory is walked
+* Only regular files are read: no symbolic links or submodules
+* Binary files (a NUL byte in the first 8000 bytes) are skipped
+* Files are grouped by extension and sorted by path within a group
+* Files without an extension come first
+* Paths in the output are relative to the repository root
 
 ## License
 

@@ -31,8 +31,7 @@ func New() *Filter {
 	return &Filter{maxSize: -1}
 }
 
-// IgnoreDotFiles leaves out the files and directories whose name starts with
-// a dot, such as .env or .github.
+// IgnoreDotFiles leaves out the files and directories starting with a dot.
 func (f *Filter) IgnoreDotFiles() *Filter {
 	f.dotIgnore = true
 	return f
@@ -76,7 +75,7 @@ func (f *Filter) Apply(r *repo.Repo) *repo.Repo {
 
 // keepPath reports whether p passes the dotfile and path rules.
 func (f *Filter) keepPath(p string) bool {
-	if f.dotIgnore && hasDotElem(p) {
+	if f.dotIgnore && hasDotPart(p) {
 		return false
 	}
 	under := func(dir string) bool { return isUnder(p, dir) }
@@ -123,11 +122,10 @@ func isUnder(p, dir string) bool {
 	return p == dir || strings.HasPrefix(p, dir+"/")
 }
 
-// hasDotElem reports whether any element of the slash-separated path p
-// starts with a dot.
-func hasDotElem(p string) bool {
-	for elem := range strings.SplitSeq(p, "/") {
-		if strings.HasPrefix(elem, ".") {
+// hasDotPart reports whether any part of the slash-separated path p starts with a dot.
+func hasDotPart(p string) bool {
+	for part := range strings.SplitSeq(p, "/") {
+		if strings.HasPrefix(part, ".") {
 			return true
 		}
 	}

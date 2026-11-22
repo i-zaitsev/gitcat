@@ -18,18 +18,19 @@ import (
 // a binary file from a text file, the same heuristic that git uses.
 const binaryProbe = 8000
 
-// File is a repository file read into memory. Path is slash-separated and
-// relative to the repository root. Ext is the extension of Path including
-// the dot, or empty when the name has none.
+// File is a repository file read into memory.
+// Path is slash-separated and relative to the repository root.
+// Ext is the extension of Path including the dot, or empty when the name has none.
 type File struct {
 	Path    string
 	Ext     string
 	Content string
 }
 
-// Load reads the files of r concurrently. If head > 0, only the first head
-// number of lines of each file is kept. Every non-empty content ends with a
-// newline.
+// Load reads the files of r concurrently.
+//
+// If head > 0, only the first head number of lines of each file is kept.
+// Every non-empty content ends with a newline.
 //
 // The files are returned grouped by extension, and sorted by path within a group.
 // The files without an extension come first.

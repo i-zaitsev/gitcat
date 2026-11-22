@@ -1,8 +1,7 @@
 // Package git runs the git commands gitcat needs: shallow clones of remote
 // repositories and listing the files of a work tree.
 //
-// Commands run with terminal prompts disabled, so a repository that needs
-// credentials fails instead of waiting for input.
+// Commands run with terminal prompts disabled: a repository that needs credentials fails.
 package git
 
 import (
@@ -17,10 +16,10 @@ import (
 	"github.com/i-zaitsev/gitcat/pkg/log"
 )
 
-// Clone makes a shallow clone of the repository at url into dir. Only the
-// latest commit is fetched, since gitcat reads file contents, not history.
-// For ssh, the key must be configured; for https, only public repositories
-// are supported. The error includes the message that git printed.
+// Clone makes a shallow clone of the repository at url into dir.
+// Only the latest commit is fetched. For ssh, the key must be configured.
+// For https, only public repositories are supported.
+// The error includes the message that git printed.
 func Clone(ctx context.Context, url, dir string) error {
 	log.Debug("cloning repository", "url", url, "dir", dir)
 	if _, err := run(ctx, "", "clone", "--depth", "1", "--quiet", "--", url, dir); err != nil {
@@ -54,8 +53,8 @@ func LsFiles(ctx context.Context, dir string) ([]string, error) {
 	return slices.Compact(files), nil
 }
 
-// run executes git with args in dir, or in the current directory when dir
-// is empty, and returns its standard output. The error of a failed command
+// run executes git with args in dir or in the current directory when the
+// dir is empty and returns its standard output. The error of a failed command
 // includes its standard error.
 func run(ctx context.Context, dir string, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "git", args...)

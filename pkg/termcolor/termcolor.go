@@ -1,5 +1,6 @@
-// Package termcolor colors text with ANSI escape codes. Colors are applied
-// only when standard error is a terminal; otherwise text is left as is.
+// Package termcolor colors text with ANSI escape codes.
+// Colors are applied only when the standard error is a terminal.
+// Otherwise, the text is left as is.
 package termcolor
 
 import (

@@ -1,4 +1,4 @@
-// Package source reads repositories from disk into a [repo.Repo].
+// Package source reads repositories from the disk into a [repo.Repo].
 //
 // The files of a git work tree are listed by git, so files ignored by
 // .gitignore are left out. Any other directory is scanned. Only regular

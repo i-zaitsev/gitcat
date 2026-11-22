@@ -18,7 +18,6 @@ import (
 )
 
 // catCmd concatenates the files of a repository into a single document.
-// Parse sets its options from the command-line flags.
 type catCmd struct {
 	fs           *flag.FlagSet
 	location     *gitpath.GitPath
@@ -37,18 +36,17 @@ type catCmd struct {
 	headLines    int
 }
 
-// newCat returns a cat command with the default options and its flags
-// defined.
+// newCat returns a cat command with the default options and its flags defined.
 func newCat() *catCmd {
 	c := &catCmd{outFmt: output.FormatJSONL, maxSize: -1}
 	c.fs = cmd.NewFlagSet(c)
 	c.fs.BoolVar(&c.dryRun, "dryrun", false, "dry run mode: log actions without executing them")
 	c.fs.BoolVar(&c.debug, "debug", false, "enable debug logging")
 	c.fs.BoolVar(&c.tmpClone, "tmp", false, "clone into a temporary directory which is deleted after execution")
-	c.fs.BoolVar(&c.dotFiles, "dot", false, "include dotfiles and dot directories, such as .github")
-	c.fs.StringVar(&c.outFile, "out", "", "output file (without extension, uses -fmt for extension)")
+	c.fs.BoolVar(&c.dotFiles, "dot", false, "include dotfiles and dot directories")
+	c.fs.StringVar(&c.outFile, "out", "", "output file without extension")
 	c.fs.StringVar(&c.localDir, "dir", "", "local directory to clone into (defaults to repo name)")
-	c.fs.Var(&c.outFmt, "fmt", "output format (text, jsonl, or md)")
+	c.fs.Var(&c.outFmt, "fmt", "output format: text, jsonl, or md")
 	c.fs.Var(&c.keepExt, "keep", "comma-separated list of file extensions to keep (default: all)")
 	c.fs.Var(&c.includePaths, "path", "comma-separated paths to include")
 	c.fs.Var(&c.excludePaths, "exclude", "comma-separated paths to exclude")
