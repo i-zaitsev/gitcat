@@ -79,7 +79,7 @@ func TestDispatch_NoArgs_PrintsUsageAndFails(t *testing.T) {
 
 	assert.ErrContains(t, err, "cat: repository is required")
 	assert.Eq(t, stdout, "")
-	assert.Contains(t, stderr, "Usage: gitcat cat [flags] <repo>")
+	assert.ContainsAll(t, stderr, "Usage", "<repo>")
 }
 
 func TestDispatch_DefaultCommand_IsCat(t *testing.T) {

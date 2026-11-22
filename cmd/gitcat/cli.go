@@ -32,6 +32,7 @@ Examples:
   gitcat -tmp -path pkg/files,cmd -exclude testdata https://github.com/i-zaitsev/gitcat
   gitcat -tmp -maxsize 500 -keep .go https://github.com/i-zaitsev/gitcat
   gitcat -tmp -head 50 -out gitcat https://github.com/i-zaitsev/gitcat
+
 `
 
 // helpArgs are the first arguments that print the usage of the program.
@@ -98,7 +99,7 @@ func dispatch(e *env, reg map[string]command, args []string) error {
 		printCmdUsage(e.stdout, c)
 		return nil
 	case errors.As(err, new(*cmd.ArgMissingError)):
-		printCmdUsage(e.stderr, c)
+		printUsage(e.stderr, reg)
 		return err
 	case err != nil:
 		return err
